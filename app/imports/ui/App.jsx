@@ -15,17 +15,51 @@ const toggleChecked = ({ _id, isChecked }) => {
 const deleteTask = ({ _id }) => TasksCollection.remove(_id);
 
 export const App = () => {
-  const tasks = useTracker(() => TasksCollection.find({}, { sort: { createdAt: -1 } }).fetch());
+  const hideCompletedFilter = { isChecked: { $ne: true } };
+
+  const tasks = useTracker(() =>
+      TasksCollection.find(hideCompleted ? hideCompletedFilter : {}, {
+        sort: { createdAt: -1 },
+      }).fetch()
+  );
+
+  const pendingTasksCount = useTracker(() =>
+      TasksCollection.find(hideCompletedFilter).count()
+  );
+
+  const pendingTasksTitle = `${
+      pendingTasksCount ? ` (${pendingTasksCount})` : ''
+  }`;
 
   return (
-      <div>
-        <h1>Welcome to Meteor!</h1>
+      <div className="app">
+        <header>
+          <div className="app-bar">
+            <div className="app-header">
+              <h1>Some things to address</h1>
+              {pendingTasksTitle}
+            </div>
+          </div>
+        </header>
 
-        <TaskForm/>
+        <div className="main">
+          <TaskForm />
+          <div className="filter">
+            <button onClick={() => setHideCompleted(!hideCompleted)}>
+              {hideCompleted ? 'Show All' : 'Hide Completed'}
+            </button>
+          </div>
 
-        <ul>
-          { tasks.map(task => <Task key={ task._id } task={ task } onCheckboxClick={toggleChecked} />) }
-        </ul>
+          <ul className="tasks">
+            {tasks.map(task => (
+                <Task
+                    key={task._id}
+                    task={task}
+                    onCheckboxClick={toggleChecked}
+                    onDeleteClick={deleteTask}
+                />
+            ))}
+          </ul>
+        </div>
       </div>
-  );
-};
+  )};
